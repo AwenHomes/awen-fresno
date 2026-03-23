@@ -1,34 +1,30 @@
 import { useState, useEffect, useRef } from "react";
 
-/* ── Brand tokens ────────────────────────────────────────── */
+/* ── Brand tokens — every colour derived from logo teal or logo gold ── */
 const C = {
-  /* Logo brand colours */
-  teal:      "#2BBFB3",
-  tealDk:    "#1a9e93",
-  tealDeep:  "#0d5c57",   // nav / footer / dark callout backgrounds
-  tealLight: "#E6F5F4",   // very light teal surface
-  gold:      "#F0A020",
-  goldDk:    "#c8821a",
-  goldLight: "#FEF5E4",   // very light gold surface
-  /* Light-theme surfaces */
-  bg:        "#F3F8F7",   // page background
-  card:      "#FFFFFF",   // card / input background
-  cardAlt:   "#EBF5F4",   // alternate tinted card
-  border:    "#C8E0DD",   // default border
-  borderDk:  "#99C4C0",   // stronger border / divider
-  /* Text */
-  ink:       "#0A1A19",   // primary text
-  inkSub:    "#2B4E4B",   // secondary / body text
-  inkMid:    "#5A8886",   // muted / label text
-  /* Dark surfaces kept for callout boxes */
-  dark:      "#0d5c57",   // re-used only in the teal callout boxes
-  darkCard:  "#0e2422",
-  darkBorder:"#1e4240",
-  /* Alerts */
-  white:     "#FFFFFF",
-  red:       "#e74c3c",
-  redSoft:   "#ff6b6b",
-  redLight:  "#FFF0EE",
+  /* ── Teal family (logo "Awen" colour #2BBFB3) ── */
+  teal:        "#2BBFB3",   // exact logo teal
+  tealDk:      "#1a9e93",   // 15% darker — gradient partner, same hue
+  tealDeep:    "#14706A",   // accessible text on white (WCAG AA)
+  tealLight:   "#EAF7F6",   // light teal surface / card alt
+  tealBorder:  "#B2DDD9",   // borders in teal context
+  /* ── Gold family (logo "ENERGY" colour #F0A020) ── */
+  gold:        "#F0A020",   // exact logo gold
+  goldDk:      "#c8821a",   // gradient partner
+  goldLight:   "#FEF5E4",   // light gold surface
+  goldBorder:  "#F5C97A",   // borders in gold context
+  /* ── Page surfaces ── */
+  bg:          "#F7FCFB",   // page background (almost-white teal tint)
+  card:        "#FFFFFF",   // cards & inputs
+  border:      "#CCE9E6",   // default card borders
+  /* ── Text — all teal-hue derived ── */
+  ink:         "#0D2B2A",   // headlines
+  inkSub:      "#2B5250",   // body text
+  inkMid:      "#5A8885",   // labels / captions
+  /* ── Alerts ── */
+  red:         "#E03E2D",
+  redLight:    "#FFF1EF",
+  white:       "#FFFFFF",
 };
 
 /* ── Logo mark component ─────────────────────────────────── */
@@ -104,30 +100,31 @@ function Shell({ topRef, children }) {
       `}</style>
       <div ref={topRef} />
 
-      {/* Nav — dark teal so logo pops */}
+      {/* Nav — white so the logo displays exactly as intended */}
       <nav style={{
         padding: "14px 28px", display: "flex", alignItems: "center",
-        background: C.tealDeep,
+        background: C.white,
+        borderBottom: `1px solid ${C.border}`,
         position: "sticky", top: 0, zIndex: 100,
-        boxShadow: "0 1px 0 rgba(0,0,0,.12)",
+        boxShadow: "0 2px 12px rgba(43,191,179,.08)",
       }}>
         <LogoMark size={0.85} />
         <div style={{ flex: 1 }} />
-        <span style={{ fontSize: 11, color: "#89C0BB", letterSpacing: ".5px", fontWeight: 500 }}>FRESNO / SAN JOAQUIN VALLEY</span>
+        <span style={{ fontSize: 11, color: C.tealDeep, letterSpacing: ".5px", fontWeight: 600, opacity: .7 }}>FRESNO / SAN JOAQUIN VALLEY</span>
       </nav>
 
       <main style={{ maxWidth: 640, margin: "0 auto", padding: "44px 20px 80px" }}>
         {children}
       </main>
 
-      {/* Footer — dark teal to match nav */}
-      <footer style={{ background: C.tealDeep, padding: "32px 28px", textAlign: "center" }}>
+      {/* Footer — light teal, on-brand, no clashing green */}
+      <footer style={{ background: C.tealLight, borderTop: `1px solid ${C.tealBorder}`, padding: "32px 28px", textAlign: "center" }}>
         <div style={{ display: "flex", justifyContent: "center", gap: 24, flexWrap: "wrap", marginBottom: 16 }}>
-          <a href="/privacy" style={{ fontSize: 11, color: "#89C0BB", textDecoration: "none", fontWeight: 500 }}>Privacy Policy</a>
-          <a href="/terms" style={{ fontSize: 11, color: "#89C0BB", textDecoration: "none", fontWeight: 500 }}>Terms of Service</a>
-          <a href="/do-not-sell" style={{ fontSize: 11, color: "#89C0BB", textDecoration: "none", fontWeight: 500 }}>Do Not Sell or Share My Personal Information</a>
+          <a href="/privacy" style={{ fontSize: 11, color: C.tealDeep, textDecoration: "none", fontWeight: 600 }}>Privacy Policy</a>
+          <a href="/terms" style={{ fontSize: 11, color: C.tealDeep, textDecoration: "none", fontWeight: 600 }}>Terms of Service</a>
+          <a href="/do-not-sell" style={{ fontSize: 11, color: C.tealDeep, textDecoration: "none", fontWeight: 600 }}>Do Not Sell or Share My Personal Information</a>
         </div>
-        <p style={{ fontSize: 11, color: "#6AA09C", lineHeight: 1.8, maxWidth: 540, margin: "0 auto" }}>
+        <p style={{ fontSize: 11, color: C.inkMid, lineHeight: 1.8, maxWidth: 540, margin: "0 auto" }}>
           © {new Date().getFullYear()} Awen Energy LLC. Projections are estimates based on publicly available PG&E rate data and historical rate increase trends.
           Actual future rates may vary. This tool is for educational purposes and does not constitute financial advice.
           Solar savings depend on system size, design, orientation, usage, and financing terms.
@@ -165,20 +162,20 @@ function fmt(n) {
 /* ── Legal page shell ───────────────────────────────────── */
 function LegalShell({ title, children }) {
   return (
-    <div style={{ minHeight: "100vh", background: C.dark, color: C.white, fontFamily: "'Outfit', sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: C.bg, color: C.ink, fontFamily: "'Outfit', sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&family=Dancing+Script:wght@500;700&display=swap" rel="stylesheet" />
-      <style>{`*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; } body { background: ${C.dark}; margin: 0; }`}</style>
-      <nav style={{ padding: "18px 28px", display: "flex", alignItems: "center", gap: 10, borderBottom: `1px solid ${C.darkBorder}`, background: `${C.dark}ee`, backdropFilter: "blur(8px)" }}>
-        <a href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none", color: C.white }}>
+      <style>{`*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; } body { background: ${C.bg}; margin: 0; -webkit-font-smoothing: antialiased; }`}</style>
+      <nav style={{ padding: "14px 28px", display: "flex", alignItems: "center", background: C.white, borderBottom: `1px solid ${C.border}`, boxShadow: "0 2px 12px rgba(43,191,179,.08)" }}>
+        <a href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
           <LogoMark size={0.85} />
         </a>
       </nav>
       <main style={{ maxWidth: 640, margin: "0 auto", padding: "40px 20px 80px" }}>
-        <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 32, marginBottom: 32 }}>{title}</h1>
-        <div style={{ fontSize: 14, color: C.offWhite, lineHeight: 1.8 }}>{children}</div>
+        <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 32, marginBottom: 32, color: C.ink }}>{title}</h1>
+        <div style={{ fontSize: 14, color: C.inkSub, lineHeight: 1.8 }}>{children}</div>
       </main>
-      <footer style={{ borderTop: `1px solid ${C.darkBorder}`, padding: "24px 28px", textAlign: "center", background: C.darkCard }}>
-        <p style={{ fontSize: 11, color: C.textMid }}>© {new Date().getFullYear()} Awen Energy LLC</p>
+      <footer style={{ background: C.tealLight, borderTop: `1px solid ${C.tealBorder}`, padding: "24px 28px", textAlign: "center" }}>
+        <p style={{ fontSize: 11, color: C.inkMid }}>© {new Date().getFullYear()} Awen Energy LLC</p>
       </footer>
     </div>
   );
@@ -549,7 +546,7 @@ export default function App() {
         <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 30, lineHeight: 1.2, marginBottom: 8 }}>
           If PG&E rates continue at their current pace:
         </h2>
-        <p style={{ fontSize: 14, color: C.textMid, marginBottom: 32 }}>
+        <p style={{ fontSize: 14, color: C.inkMid, marginBottom: 32 }}>
           Based on {fmt(monthly)}/month and PG&E's average 6.5% annual rate increase
         </p>
 
@@ -560,19 +557,19 @@ export default function App() {
           <Bar label="Next 25 years" value={cost25yr} max={cost25yr} color={C.red} delay={0.5} />
         </div>
 
-        {/* Key stat callout — stays dark teal for impact */}
+        {/* Key stat callout — brand teal for impact */}
         <div className="fade-up fade-up-d2" style={{
-          background: `linear-gradient(135deg, ${C.tealDeep} 0%, #0a4a45 100%)`,
+          background: `linear-gradient(135deg, ${C.teal} 0%, ${C.tealDk} 100%)`,
           borderRadius: 16, padding: "28px 24px", marginBottom: 24,
-          boxShadow: `0 4px 24px ${C.teal}30`,
+          boxShadow: `0 6px 28px ${C.teal}40`,
         }}>
-          <div style={{ fontSize: 11, color: "#7DDDD6", letterSpacing: "2.5px", fontWeight: 700, textTransform: "uppercase", marginBottom: 10 }}>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,.75)", letterSpacing: "2.5px", fontWeight: 700, textTransform: "uppercase", marginBottom: 10 }}>
             THE REAL NUMBER
           </div>
-          <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 42, color: "#fff", marginBottom: 8, lineHeight: 1 }}>
+          <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 42, color: C.white, marginBottom: 8, lineHeight: 1 }}>
             {fmt(cost25yr)}
           </div>
-          <p style={{ fontSize: 14, color: "#B8E0DD", lineHeight: 1.65 }}>
+          <p style={{ fontSize: 14, color: "rgba(255,255,255,.85)", lineHeight: 1.65 }}>
             That's what you're projected to send PG&E over the next 25 years at current rate
             trends — with no equity, no ownership, and no protection from future increases.
           </p>
@@ -636,7 +633,7 @@ export default function App() {
           STEP 2 OF 3
         </div>
         <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 30, lineHeight: 1.2, marginBottom: 20 }}>
-          Why some Fresno homeowners love solar — and others feel <span style={{ color: C.redSoft }}>burned.</span>
+          Why some Fresno homeowners love solar — and others feel <span style={{ color: C.red }}>burned.</span>
         </h2>
         <p style={{ fontSize: 15, color: C.inkSub, lineHeight: 1.8, marginBottom: 28 }}>
           We hear it constantly: one neighbor hasn't paid PG&E in years, while another installed solar

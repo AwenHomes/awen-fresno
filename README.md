@@ -22,9 +22,11 @@ Fresno-specific landing page calibrated to PG&E cost pain, NEM 3.0 education, an
 Add these in **Vercel → Project → Settings → Environment Variables**:
 
 ```
-VITE_SUPABASE_URL=https://kvzurzcgndrooxhfkdbv.supabase.co
-VITE_SUPABASE_KEY=your_anon_key_here
+VITE_SUPABASE_URL=<your Supabase project URL>
+VITE_SUPABASE_KEY=<your Supabase anon key>
 ```
+
+See `.env.example` for a template. **Never commit real credentials to version control.**
 
 If you skip this step, the app still works but leads won't be captured.
 

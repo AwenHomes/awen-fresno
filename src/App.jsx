@@ -168,25 +168,42 @@ export default function App() {
   const locked25  = locked * 12 * 25;
   const savings25 = cost25yr - locked25;
 
+  /* ── Input sanitization ── */
+  const sanitize = (str) => str.replace(/[<>"'&]/g, "").trim();
+
   /* ── Validation ── */
   const validate = () => {
     const e = {};
-    if (!form.name.trim()) e.name = "Name is required";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = "Valid email required";
-    if (!/^\+?[\d\s\-().]{7,}$/.test(form.phone.trim())) e.phone = "Valid phone required";
+    const trimmedName = form.name.trim();
+    const trimmedEmail = form.email.trim().toLowerCase();
+    const trimmedPhone = form.phone.trim();
+
+    if (!trimmedName || trimmedName.length < 2 || trimmedName.length > 100) e.name = "Valid name required (2–100 characters)";
+    if (!/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z]{2,})+$/.test(trimmedEmail)) e.email = "Valid email required";
+    if (!/^\+?1?\s*[-.(]?\d{3}[-.)]\s*\d{3}[-.]\d{4}$/.test(trimmedPhone.replace(/\s+/g, " "))) e.phone = "Valid US phone number required (e.g. (559) 000-0000)";
     if (!consent) e.consent = "Consent is required";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
+  /* ── Rate-limit tracking ── */
+  const lastSubmitRef = useRef(0);
+  const SUBMIT_COOLDOWN_MS = 10000; // 10 seconds between submissions
+
   /* ── Submit ── */
   const handleSubmit = async () => {
     if (!validate() || submitting) return;
+
+    // Client-side rate limiting
+    const now = Date.now();
+    if (now - lastSubmitRef.current < SUBMIT_COOLDOWN_MS) return;
+    lastSubmitRef.current = now;
+
     setSubmitting(true);
 
     if (SUPABASE_URL && SUPABASE_KEY) {
       try {
-        await fetch(`${SUPABASE_URL}/rest/v1/leads`, {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/leads`, {
           method: "POST",
           headers: {
             "Content-Type":  "application/json",
@@ -195,9 +212,9 @@ export default function App() {
             Prefer:          "return=minimal",
           },
           body: JSON.stringify({
-            name:         form.name.trim(),
-            email:        form.email.trim().toLowerCase(),
-            phone:        form.phone.trim(),
+            name:         sanitize(form.name),
+            email:        sanitize(form.email).toLowerCase(),
+            phone:        sanitize(form.phone),
             state:        "California",
             city:         "Fresno",
             monthly_bill: monthly,
@@ -208,16 +225,21 @@ export default function App() {
             user_agent:   navigator.userAgent,
           }),
         });
-      } catch (err) {
-        console.error("Lead capture error:", err);
+        if (!res.ok) {
+          // Log minimal info — no stack traces or response bodies
+          console.warn("Lead capture: submission was not successful.");
+        }
+      } catch {
+        // Silently handle network errors — no details leaked to console
       }
     }
 
     setSubmitted(true);
     setSubmitting(false);
     setStep(5);
+    const CALENDLY_URL = "https://www.calendly.com/sustainablelifebydesign";
     setTimeout(() => {
-      window.open("https://www.calendly.com/sustainablelifebydesign", "_blank");
+      window.open(CALENDLY_URL, "_blank", "noopener,noreferrer");
     }, 3000);
   };
 

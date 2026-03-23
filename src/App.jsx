@@ -21,6 +21,9 @@ const C = {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY || "";
 
+/* ── TCPA consent disclosure text (stored with each lead) ── */
+const TCPA_DISCLOSURE = 'By checking this box and clicking "Get My Free Personalized Report," I provide my prior express written consent to allow Awen Energy LLC to contact me at the phone number I provided above, including by automated telephone dialing system, prerecorded voice, or artificial voice message, and by text message (SMS/MMS), for marketing purposes regarding solar energy products and services. I understand that my consent is not a condition of purchasing any goods or services. Message and data rates may apply. I may revoke my consent at any time.';
+
 /* ── PG&E rate model ─────────────────────────────────────── */
 const PGE_ANNUAL_INCREASE = 0.065; // 6.5% avg — conservative per CPUC data
 const PGE_FIXED_CHARGE    = 24;    // monthly base service charge starting Mar 2026
@@ -39,8 +42,103 @@ function fmt(n) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }
 
+/* ── Legal page shell ───────────────────────────────────── */
+function LegalShell({ title, children }) {
+  return (
+    <div style={{ minHeight: "100vh", background: C.dark, color: C.white, fontFamily: "'Outfit', sans-serif" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
+      <style>{`*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; } body { background: ${C.dark}; margin: 0; }`}</style>
+      <nav style={{ padding: "20px 28px", display: "flex", alignItems: "center", gap: 10, borderBottom: `1px solid ${C.darkMid}` }}>
+        <a href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", color: C.white }}>
+          <svg width="30" height="30" viewBox="0 0 36 36" fill="none">
+            <circle cx="18" cy="18" r="18" fill={C.tealDeep}/>
+            <path d="M18 8C12 8 8 12 8 18C8 24 12 28 18 28C24 28 28 24 28 18" stroke={C.gold} strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+            <path d="M18 8C22 10 26 14 26 18" stroke={C.teal} strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+            <circle cx="18" cy="18" r="3" fill={C.gold}/>
+          </svg>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 15, letterSpacing: ".5px", lineHeight: 1 }}>Awen</div>
+            <div style={{ fontWeight: 600, fontSize: 9, color: C.gold, letterSpacing: "2px", textTransform: "uppercase" }}>ENERGY</div>
+          </div>
+        </a>
+      </nav>
+      <main style={{ maxWidth: 640, margin: "0 auto", padding: "40px 20px 80px" }}>
+        <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 32, marginBottom: 32 }}>{title}</h1>
+        <div style={{ fontSize: 14, color: C.offWhite, lineHeight: 1.8 }}>{children}</div>
+      </main>
+      <footer style={{ borderTop: `1px solid ${C.darkMid}`, padding: "24px 28px", textAlign: "center" }}>
+        <p style={{ fontSize: 11, color: C.textMid }}>© {new Date().getFullYear()} Awen Energy LLC</p>
+      </footer>
+    </div>
+  );
+}
+
+function PrivacyPolicy() {
+  return (
+    <LegalShell title="Privacy Policy">
+      <p style={{ marginBottom: 16 }}><strong>Effective Date:</strong> March 2026</p>
+      <p style={{ marginBottom: 16 }}>Awen Energy LLC (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) respects your privacy. This Privacy Policy describes how we collect, use, disclose, and protect your personal information when you visit our website or submit a lead form.</p>
+
+      <h3 style={{ color: C.teal, marginTop: 24, marginBottom: 12 }}>Information We Collect</h3>
+      <p style={{ marginBottom: 16 }}>When you use our cost report tool and submit the lead capture form, we collect: your name, email address, phone number, estimated monthly electricity bill, city, state, the date and time you provided consent, the URL of the page where consent was given, and your browser user agent string.</p>
+
+      <h3 style={{ color: C.teal, marginTop: 24, marginBottom: 12 }}>How We Use Your Information</h3>
+      <p style={{ marginBottom: 16 }}>We use the information you provide to: (a) prepare and deliver your personalized PG&E cost comparison report; (b) contact you by phone, text, or email about solar energy products and services as authorized by your consent; (c) improve our website and services; and (d) comply with legal obligations including TCPA consent recordkeeping requirements.</p>
+
+      <h3 style={{ color: C.teal, marginTop: 24, marginBottom: 12 }}>Sharing of Information</h3>
+      <p style={{ marginBottom: 16 }}>We do not sell your personal information. We may share your information with service providers who assist us in delivering our services (such as our CRM and scheduling platforms), and as required by law.</p>
+
+      <h3 style={{ color: C.teal, marginTop: 24, marginBottom: 12 }}>Your California Privacy Rights (CCPA/CPRA)</h3>
+      <p style={{ marginBottom: 16 }}>If you are a California resident, you have the right to: (a) know what personal information we collect about you; (b) request deletion of your personal information; (c) request correction of inaccurate personal information; (d) opt out of the sale or sharing of your personal information; and (e) not be discriminated against for exercising your privacy rights. To exercise any of these rights, contact us at privacy@awenenergy.com.</p>
+
+      <h3 style={{ color: C.teal, marginTop: 24, marginBottom: 12 }}>Data Retention</h3>
+      <p style={{ marginBottom: 16 }}>We retain your personal information for as long as necessary to fulfill the purposes described in this policy, and for a minimum of 5 years for TCPA consent records.</p>
+
+      <h3 style={{ color: C.teal, marginTop: 24, marginBottom: 12 }}>Contact Us</h3>
+      <p style={{ marginBottom: 16 }}>Awen Energy LLC<br />Email: privacy@awenenergy.com</p>
+    </LegalShell>
+  );
+}
+
+function TermsOfService() {
+  return (
+    <LegalShell title="Terms of Service">
+      <p style={{ marginBottom: 16 }}><strong>Effective Date:</strong> March 2026</p>
+      <p style={{ marginBottom: 16 }}>By using this website, you agree to these Terms of Service. If you do not agree, please do not use our website.</p>
+
+      <h3 style={{ color: C.teal, marginTop: 24, marginBottom: 12 }}>Use of This Website</h3>
+      <p style={{ marginBottom: 16 }}>This website provides educational cost projection tools and lead capture services for solar energy consultations. The projections displayed are estimates based on publicly available PG&E rate data and historical trends. They do not constitute financial advice, guarantees, or binding offers.</p>
+
+      <h3 style={{ color: C.teal, marginTop: 24, marginBottom: 12 }}>Consent to Communications</h3>
+      <p style={{ marginBottom: 16 }}>By submitting the lead form and checking the consent box, you provide your prior express written consent under the Telephone Consumer Protection Act (TCPA) for Awen Energy LLC to contact you at the phone number you provided using automated telephone dialing systems, prerecorded or artificial voice messages, and text messages (SMS/MMS) for marketing purposes. You may revoke this consent at any time by contacting us or replying STOP to any text message.</p>
+
+      <h3 style={{ color: C.teal, marginTop: 24, marginBottom: 12 }}>Limitation of Liability</h3>
+      <p style={{ marginBottom: 16 }}>Awen Energy LLC shall not be liable for any damages arising from your use of this website or reliance on the projections provided. Solar savings depend on system size, design, orientation, usage patterns, and financing terms.</p>
+
+      <h3 style={{ color: C.teal, marginTop: 24, marginBottom: 12 }}>Contact Us</h3>
+      <p style={{ marginBottom: 16 }}>Awen Energy LLC<br />Email: info@awenenergy.com</p>
+    </LegalShell>
+  );
+}
+
+function DoNotSell() {
+  return (
+    <LegalShell title="Do Not Sell or Share My Personal Information">
+      <p style={{ marginBottom: 16 }}>Under the California Consumer Privacy Act (CCPA) as amended by the California Privacy Rights Act (CPRA), California residents have the right to opt out of the sale or sharing of their personal information.</p>
+      <p style={{ marginBottom: 16 }}><strong>Awen Energy LLC does not sell your personal information.</strong> We do not share your personal information with third parties for cross-context behavioral advertising purposes.</p>
+      <p style={{ marginBottom: 16 }}>If you would like to submit a request regarding your personal data, or if you have questions about our data practices, please contact us at:</p>
+      <p style={{ marginBottom: 16 }}>Email: privacy@awenenergy.com</p>
+      <p style={{ marginBottom: 16 }}>We honor Global Privacy Control (GPC) browser signals as valid opt-out requests.</p>
+    </LegalShell>
+  );
+}
+
 /* ── Main App ────────────────────────────────────────────── */
 export default function App() {
+  const path = window.location.pathname;
+  if (path === "/privacy") return <PrivacyPolicy />;
+  if (path === "/terms") return <TermsOfService />;
+  if (path === "/do-not-sell") return <DoNotSell />;
   const [step, setStep]     = useState(0);
   const [bill, setBill]     = useState("");
   const [anim, setAnim]     = useState(false);
@@ -105,6 +203,9 @@ export default function App() {
             monthly_bill: monthly,
             source:       "fresno-pge-report",
             consented_at: consentTimestamp,
+            consent_text: TCPA_DISCLOSURE,
+            consent_url:  window.location.href,
+            user_agent:   navigator.userAgent,
           }),
         });
       } catch (err) {
@@ -182,6 +283,11 @@ export default function App() {
 
       {/* Footer */}
       <footer style={{ borderTop: `1px solid ${C.darkMid}`, padding: "24px 28px", textAlign: "center" }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
+          <a href="/privacy" style={{ fontSize: 11, color: C.teal, textDecoration: "none" }}>Privacy Policy</a>
+          <a href="/terms" style={{ fontSize: 11, color: C.teal, textDecoration: "none" }}>Terms of Service</a>
+          <a href="/do-not-sell" style={{ fontSize: 11, color: C.teal, textDecoration: "none" }}>Do Not Sell or Share My Personal Information</a>
+        </div>
         <p style={{ fontSize: 11, color: C.textMid, lineHeight: 1.8, maxWidth: 540, margin: "0 auto" }}>
           © {new Date().getFullYear()} Awen Energy LLC. Projections are estimates based on publicly available PG&E rate data and historical rate increase trends.
           Actual future rates may vary. This tool is for educational purposes and does not constitute financial advice.
@@ -549,15 +655,18 @@ export default function App() {
               setConsentTimestamp(e.target.checked ? new Date().toISOString() : null);
               if (e.target.checked) setErrors(p => ({ ...p, consent: undefined }));
             }}
-            style={{ marginTop: 3, accentColor: C.teal, width: 16, height: 16 }}
+            style={{ marginTop: 3, accentColor: C.teal, width: 16, height: 16, flexShrink: 0 }}
           />
           <span style={{ fontSize: 11, color: C.textMid, lineHeight: 1.6 }}>
-            By checking this box, I consent to receive calls and texts from Awen Energy LLC at the phone number provided,
-            including by autodialer. Consent is not a condition of purchase. Msg & data rates may apply.
+            By checking this box and clicking &quot;Get My Free Personalized Report,&quot; I provide my prior express written
+            consent to allow Awen Energy LLC to contact me at the phone number I provided above, including by automated
+            telephone dialing system, prerecorded voice, or artificial voice message, and by text message (SMS/MMS), for
+            marketing purposes regarding solar energy products and services. I understand that my consent is not a condition
+            of purchasing any goods or services. Message and data rates may apply. I may revoke my consent at any time.
             <br />
-            <span style={{ color: C.teal, cursor: "pointer" }} onClick={() => {}}>Privacy Policy</span>
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: C.teal }}>Privacy Policy</a>
             {" · "}
-            <span style={{ color: C.teal, cursor: "pointer" }} onClick={() => {}}>Terms of Service</span>
+            <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: C.teal }}>Terms of Service</a>
           </span>
         </div>
         {errors.consent && <span style={{ fontSize: 12, color: C.red, display: "block", marginBottom: 16, marginTop: -16 }}>{errors.consent}</span>}

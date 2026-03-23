@@ -70,8 +70,16 @@ CREATE TABLE IF NOT EXISTS leads (
   monthly_bill numeric,
   source text,
   consented_at timestamptz,
+  consent_text text,
+  consent_url text,
+  user_agent text,
   created_at timestamptz DEFAULT now()
 );
+
+-- If you already have the table, add the new compliance columns:
+-- ALTER TABLE leads ADD COLUMN IF NOT EXISTS consent_text text;
+-- ALTER TABLE leads ADD COLUMN IF NOT EXISTS consent_url text;
+-- ALTER TABLE leads ADD COLUMN IF NOT EXISTS user_agent text;
 
 ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
 

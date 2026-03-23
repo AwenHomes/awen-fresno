@@ -186,7 +186,7 @@ export default function App() {
 
     if (SUPABASE_URL && SUPABASE_KEY) {
       try {
-        await fetch(`${SUPABASE_URL}/rest/v1/leads`, {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/leads`, {
           method: "POST",
           headers: {
             "Content-Type":  "application/json",
@@ -208,6 +208,10 @@ export default function App() {
             user_agent:   navigator.userAgent,
           }),
         });
+        if (!res.ok) {
+          const body = await res.text();
+          console.error("Lead capture failed:", res.status, body);
+        }
       } catch (err) {
         console.error("Lead capture error:", err);
       }

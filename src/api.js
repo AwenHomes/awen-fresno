@@ -7,19 +7,20 @@ export function sanitize(str) {
 
 /* ── Claude prompt builder ────────────────────────────────── */
 function buildPrompt({ zipCode, monthlyBill, squareFootage, homeAge, solarStatus, frustrations }) {
-  const inEC = ENERGY_COMMUNITY_ZIPS.has(zipCode.trim());
-  const frustrationsStr = frustrations.join("; ");
-  const lockedLow  = Math.round(monthlyBill * 0.70);
-  const lockedHigh = Math.round(monthlyBill * 0.75);
+  const inEC = ENERGY_COMMUNITY_ZIPS.has(sanitize(zipCode).trim());
+  const frustrationsStr = (Array.isArray(frustrations) ? frustrations : []).map(f => sanitize(f)).join("; ");
+  const bill = Math.max(1, Math.min(9999, Number(monthlyBill) || 260));
+  const lockedLow  = Math.round(bill * 0.70);
+  const lockedHigh = Math.round(bill * 0.75);
 
   return `You are an energy cost analyst writing a personalized PG&E electricity report for a homeowner in Fresno / San Joaquin Valley, California.
 
 HOMEOWNER INPUTS:
-- Zip code: ${zipCode}
-- Average summer PG&E bill: $${monthlyBill}/month
-- Home size: ${squareFootage}
-- Home age: ${homeAge}
-- Current solar status: ${solarStatus}
+- Zip code: ${sanitize(zipCode)}
+- Average summer PG&E bill: $${bill}/month
+- Home size: ${sanitize(squareFootage)}
+- Home age: ${sanitize(homeAge)}
+- Current solar status: ${sanitize(solarStatus)}
 - Primary frustrations: ${frustrationsStr}
 
 REFERENCE DATA:
@@ -39,8 +40,8 @@ REFERENCE DATA:
 
 ENERGY COMMUNITY STATUS FOR THIS HOMEOWNER:
 ${inEC
-    ? `Zip code ${zipCode} IS in the IRS-designated energy community list. Mention this specifically — it means enhanced financing terms can be passed through.`
-    : `Zip code ${zipCode} is NOT on the confirmed energy community list. Note that nearby areas may qualify and it's worth a quick check, without overpromising.`
+    ? `Zip code ${sanitize(zipCode)} IS in the IRS-designated energy community list. Mention this specifically — it means enhanced financing terms can be passed through.`
+    : `Zip code ${sanitize(zipCode)} is NOT on the confirmed energy community list. Note that nearby areas may qualify and it's worth a quick check, without overpromising.`
 }
 
 WRITING INSTRUCTIONS:
@@ -63,7 +64,7 @@ SECTION 2: ## Why Solar Works For Some Fresno Homeowners And Not Others
 - If frustrations include "The grid feels unreliable" — mention battery provides backup power
 
 SECTION 3: ## What A Properly Designed System Would Look Like For Your Home
-- Based on $${monthlyBill}/month and ${squareFootage}, estimate rough system size (kW panels, kWh battery)
+- Based on $${bill}/month and ${sanitize(squareFootage)}, estimate rough system size (kW panels, kWh battery)
 - Estimate locked monthly payment range (~$${lockedLow}–$${lockedHigh}/month)
 - Contrast: PG&E bill goes up every year vs. locked payment stays flat for 25 years
 - Mention they own the equipment from day one
@@ -85,37 +86,22 @@ FORMAT:
 - End with one forward-motion sentence (no exclamation marks)`;
 }
 
-/* ── Claude API caller ────────────────────────────────────────
-   TODO: Move this call to /api/generate-report (Vercel serverless)
-   before production so VITE_ANTHROPIC_API_KEY is not exposed in
-   the browser bundle. See api/generate-report.js for the wiring.
-─────────────────────────────────────────────────────────────── */
+/* ── Claude API caller (via server-side Vercel function) ────── */
 export async function generateReport(inputs) {
   const prompt = buildPrompt(inputs);
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const res = await fetch("/api/generate-report", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 2048,
-      messages: [{ role: "user", content: prompt }],
-    }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt }),
   });
 
   if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Claude API ${res.status}: ${errText}`);
+    throw new Error(`Report generation failed (${res.status})`);
   }
 
   const data = await res.json();
-  return data.content[0].text;
+  return data.report;
 }
 
 /* ── Supabase lead submission ─────────────────────────────── */

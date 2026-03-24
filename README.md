@@ -22,14 +22,19 @@ AI-generated personalized energy report for Fresno / San Joaquin Valley homeowne
 Add these in **Vercel → Project → Settings → Environment Variables**:
 
 ```
-VITE_ANTHROPIC_API_KEY=<your Anthropic API key>
+ANTHROPIC_API_KEY=<your Anthropic API key>
 VITE_SUPABASE_URL=<your Supabase project URL>
 VITE_SUPABASE_KEY=<your Supabase anon key>
 ```
 
+Optionally, to restrict the API endpoint to your domain only:
+```
+ALLOWED_ORIGIN=https://report.awenenergy.com
+```
+
 See `.env.example` for a template. **Never commit real credentials to version control.**
 
-> **Security note:** `VITE_ANTHROPIC_API_KEY` is currently used client-side for speed of development. Before going to production at scale, move the Claude API call to the stub serverless function at `api/generate-report.js`. See the comments in that file for exact wiring instructions. The server-side env var would be `ANTHROPIC_API_KEY` (no `VITE_` prefix).
+> **Security note:** `ANTHROPIC_API_KEY` is used **server-side only** via the Vercel serverless function at `api/generate-report.js`. It is never exposed to the browser. Do NOT prefix it with `VITE_` — that would embed it in the client bundle.
 
 If you skip Supabase setup, the app still works but leads won't be captured.
 
@@ -130,8 +135,8 @@ src/
     Report.jsx              — MarkdownReport renderer, LeadCaptureForm (full TCPA), StepReport
     ThankYou.jsx            — Confirmation + auto-redirect to Calendly
 api/
-  generate-report.js        — Vercel serverless stub (wire up to move API key server-side)
-vercel.json                 — SPA routing + security headers (CSP allows Anthropic API)
+  generate-report.js        — Vercel serverless function (API key stays server-side)
+vercel.json                 — SPA routing + security headers (CSP, HSTS, X-Frame-Options)
 ```
 
 ### TCPA Compliance

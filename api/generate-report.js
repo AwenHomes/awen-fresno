@@ -30,16 +30,23 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   });
 }
 
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "";
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGIN || "")
+  .split(",").map(s => s.trim()).filter(Boolean);
+
+function isOriginAllowed(origin) {
+  if (!ALLOWED_ORIGINS.length) return true; // No restriction configured
+  if (!origin) return true; // Same-origin requests (no Origin header)
+  return ALLOWED_ORIGINS.some(allowed => origin === allowed);
+}
 
 export default async function handler(req, res) {
-  // CORS: restrict to our own domain in production
-  if (ALLOWED_ORIGIN) {
-    const origin = req.headers.origin || "";
-    if (origin && origin !== ALLOWED_ORIGIN) {
-      return res.status(403).json({ error: "Forbidden" });
-    }
-    res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
+  // CORS: restrict to configured domains in production
+  const origin = req.headers.origin || "";
+  if (!isOriginAllowed(origin)) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
   }
 
   if (req.method === "OPTIONS") {

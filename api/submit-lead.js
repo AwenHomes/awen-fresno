@@ -26,16 +26,23 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   });
 }
 
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "";
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGIN || "")
+  .split(",").map(s => s.trim()).filter(Boolean);
+
+function isOriginAllowed(origin) {
+  if (!ALLOWED_ORIGINS.length) return true;
+  if (!origin) return true;
+  return ALLOWED_ORIGINS.some(allowed => origin === allowed);
+}
 
 export default async function handler(req, res) {
   // CORS
-  if (ALLOWED_ORIGIN) {
-    const origin = req.headers.origin || "";
-    if (origin && origin !== ALLOWED_ORIGIN) {
-      return res.status(403).json({ error: "Forbidden" });
-    }
-    res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
+  const origin = req.headers.origin || "";
+  if (!isOriginAllowed(origin)) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
   }
 
   if (req.method === "OPTIONS") {

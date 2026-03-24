@@ -48,8 +48,8 @@ export default function App() {
       const text = await generateReport(allInputs);
       setReportText(text);
       goTo("report");
-    } catch {
-      setApiError("We had trouble generating your report. Please check your connection and try again.");
+    } catch (err) {
+      setApiError(err.message || "We had trouble generating your report. Please check your connection and try again.");
       goTo("form2");
     }
   }

@@ -1,6 +1,6 @@
-# Awen Energy — Fresno PG&E Cost Report (Lead Magnet)
+# Awen Energy — AI-Powered PG&E Reality Report
 
-Fresno-specific landing page calibrated to PG&E cost pain, NEM 3.0 education, and system design quality. Captures leads to Supabase + redirects to Calendly.
+AI-generated personalized energy report for Fresno / San Joaquin Valley homeowners. Uses Claude (Sonnet) to produce a 4-section narrative report tailored to the homeowner's zip code, bill, home details, and frustrations — before asking for contact info. Captures leads to Supabase + redirects to Calendly.
 
 ## Deploy to Vercel
 
@@ -22,13 +22,16 @@ Fresno-specific landing page calibrated to PG&E cost pain, NEM 3.0 education, an
 Add these in **Vercel → Project → Settings → Environment Variables**:
 
 ```
+VITE_ANTHROPIC_API_KEY=<your Anthropic API key>
 VITE_SUPABASE_URL=<your Supabase project URL>
 VITE_SUPABASE_KEY=<your Supabase anon key>
 ```
 
 See `.env.example` for a template. **Never commit real credentials to version control.**
 
-If you skip this step, the app still works but leads won't be captured.
+> **Security note:** `VITE_ANTHROPIC_API_KEY` is currently used client-side for speed of development. Before going to production at scale, move the Claude API call to the stub serverless function at `api/generate-report.js`. See the comments in that file for exact wiring instructions. The server-side env var would be `ANTHROPIC_API_KEY` (no `VITE_` prefix).
+
+If you skip Supabase setup, the app still works but leads won't be captured.
 
 ## Set Up Subdomain: report.awenenergy.com
 
@@ -58,10 +61,9 @@ If you prefer `fresno.awenenergy.com`, just replace `report` with `fresno` in bo
 
 ## Supabase Table Setup
 
-If you haven't already created the leads table, run this in Supabase SQL Editor:
+### Fresh install — run this in Supabase SQL Editor:
 
 ```sql
--- Only needed if you haven't created it already
 CREATE TABLE IF NOT EXISTS leads (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   name text,
@@ -78,17 +80,29 @@ CREATE TABLE IF NOT EXISTS leads (
   created_at timestamptz DEFAULT now()
 );
 
--- If you already have the table, add the new compliance columns:
--- ALTER TABLE leads ADD COLUMN IF NOT EXISTS consent_text text;
--- ALTER TABLE leads ADD COLUMN IF NOT EXISTS consent_url text;
--- ALTER TABLE leads ADD COLUMN IF NOT EXISTS user_agent text;
-
 ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
 
 -- Allow browser (anon key) to insert rows only
 CREATE POLICY "Allow anon inserts" ON leads
   FOR INSERT TO anon
   WITH CHECK (true);
+```
+
+### Existing table — run these migrations to add new columns:
+
+```sql
+-- New input fields
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS zip_code text;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS home_sqft text;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS home_age text;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS solar_status text;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS frustrations text;
+
+-- AI report tracking
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS ai_report_generated boolean DEFAULT false;
+
+-- TCPA: which contact methods the homeowner consented to
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS consent_methods text;
 ```
 
 ## Local Development
@@ -101,8 +115,33 @@ npm run preview   # preview the build locally
 ```
 
 ## What's Included
-- `src/App.jsx` — Full React app (PG&E projections, NEM 3.0 education, lead capture, TCPA)
-- `vercel.json` — SPA routing config
-- Supabase lead capture wired via environment variables
-- Awen Energy branding (teal/gold/dark editorial)
-- Fresno-specific data and messaging
+
+```
+src/
+  constants.js              — Colors (D), energy community zips, PG&E math, form options
+  api.js                    — Claude prompt builder, API caller, Supabase submitter
+  App.jsx                   — Lean router (intro → form1 → form2 → loading → report → thankyou)
+  components/
+    Shell.jsx               — LogoMark, Shell (dark), LegalShell
+    Legal.jsx               — PrivacyPolicy, TermsOfService, DoNotSell
+    LoadingScreen.jsx       — Spinner + cycling status messages
+    CostChart.jsx           — Animated bar chart (CSS transitions, no library)
+    Forms.jsx               — StepIntro, StepForm1, StepForm2 with radio/checkbox selectors
+    Report.jsx              — MarkdownReport renderer, LeadCaptureForm (full TCPA), StepReport
+    ThankYou.jsx            — Confirmation + auto-redirect to Calendly
+api/
+  generate-report.js        — Vercel serverless stub (wire up to move API key server-side)
+vercel.json                 — SPA routing + security headers (CSP allows Anthropic API)
+```
+
+### TCPA Compliance
+All 14 compliance requirements are implemented:
+- Separate unchecked checkboxes for phone, text/SMS, and email
+- "Consent is not a condition of any purchase" in bold
+- Automated technology disclosure
+- STOP/unsubscribe/email revocation instructions
+- 10 business day honoring commitment
+- Federal DNC + California State DNC disclosure
+- "Your information will not be sold, shared with, or used by any other company"
+- Consent timestamp + methods stored in Supabase
+- Links to Privacy Policy, Terms of Service, Do Not Sell or Share

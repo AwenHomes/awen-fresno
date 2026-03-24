@@ -21,20 +21,38 @@ AI-generated personalized energy report for Fresno / San Joaquin Valley homeowne
 
 Add these in **Vercel → Project → Settings → Environment Variables**:
 
+### Required (server-side only)
 ```
 ANTHROPIC_API_KEY=<your Anthropic API key>
-VITE_SUPABASE_URL=<your Supabase project URL>
-VITE_SUPABASE_KEY=<your Supabase anon key>
+SUPABASE_URL=<your Supabase project URL>
+SUPABASE_SERVICE_KEY=<your Supabase service role key>
 ```
 
-Optionally, to restrict the API endpoint to your domain only:
+### Rate limiting (server-side, strongly recommended)
+```
+UPSTASH_REDIS_REST_URL=<from Upstash dashboard>
+UPSTASH_REDIS_REST_TOKEN=<from Upstash dashboard>
+```
+
+Create a free Redis database at [console.upstash.com](https://console.upstash.com). This enables per-IP rate limiting: 5 report generations and 3 lead submissions per 10-minute window.
+
+### Optional
 ```
 ALLOWED_ORIGIN=https://report.awenenergy.com
 ```
 
-See `.env.example` for a template. **Never commit real credentials to version control.**
+### Client-side (safe to expose, protected by Supabase RLS)
+```
+VITE_SUPABASE_URL=<your Supabase project URL>
+VITE_SUPABASE_KEY=<your Supabase anon key>
+```
 
-> **Security note:** `ANTHROPIC_API_KEY` is used **server-side only** via the Vercel serverless function at `api/generate-report.js`. It is never exposed to the browser. Do NOT prefix it with `VITE_` — that would embed it in the client bundle.
+See `.env.example` for a full template. **Never commit real credentials to version control.**
+
+> **Security notes:**
+> - `ANTHROPIC_API_KEY` and `SUPABASE_SERVICE_KEY` are used **server-side only** — never in the browser bundle. Do NOT prefix with `VITE_`.
+> - The prompt is built **server-side** from validated inputs — the client never sends a raw prompt, preventing prompt injection.
+> - All inputs are validated against allow-lists (select options) and sanitized before use.
 
 If you skip Supabase setup, the app still works but leads won't be captured.
 
@@ -135,7 +153,9 @@ src/
     Report.jsx              — MarkdownReport renderer, LeadCaptureForm (full TCPA), StepReport
     ThankYou.jsx            — Confirmation + auto-redirect to Calendly
 api/
-  generate-report.js        — Vercel serverless function (API key stays server-side)
+  _shared.js                — Shared validation, sanitization, prompt builder (server-side)
+  generate-report.js        — Vercel serverless: validates inputs, builds prompt, calls Claude
+  submit-lead.js            — Vercel serverless: validates + sanitizes leads, inserts into Supabase
 vercel.json                 — SPA routing + security headers (CSP, HSTS, X-Frame-Options)
 ```
 

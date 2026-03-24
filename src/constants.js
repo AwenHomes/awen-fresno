@@ -76,4 +76,4 @@ export const FRUSTRATION_OPTS = [
   "The grid feels unreliable",
 ];
 
-export const CALENDLY_URL = "https://www.calendly.com/sustainablelifebydesign";
+export const CALENDLY_URL = "https://calendly.com/awenenergy";

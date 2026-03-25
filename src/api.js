@@ -21,7 +21,8 @@ export async function generateReport(inputs) {
 
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || `Report generation failed (${res.status})`);
+    const detail = data.details ? ` (${data.details.join(", ")})` : "";
+    throw new Error((data.error || `Report generation failed (${res.status})`) + detail);
   }
 
   const data = await res.json();

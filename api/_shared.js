@@ -149,6 +149,56 @@ FORMAT:
 - End with one forward-motion sentence (no exclamation marks)`;
 }
 
+/* ── Disposable / temporary email domain blocklist ────────── */
+const DISPOSABLE_EMAIL_DOMAINS = new Set([
+  "mailinator.com", "guerrillamail.com", "guerrillamail.net", "tempmail.com",
+  "throwaway.email", "yopmail.com", "sharklasers.com", "guerrillamailblock.com",
+  "grr.la", "dispostable.com", "mailnesia.com", "maildrop.cc", "discard.email",
+  "trashmail.com", "trashmail.net", "trashmail.me", "10minutemail.com",
+  "tempail.com", "temp-mail.org", "fakeinbox.com", "mailcatch.com",
+  "mohmal.com", "burnermail.io", "getnada.com", "emailondeck.com",
+  "mintemail.com", "tmail.ws", "harakirimail.com", "crazymailing.com",
+  "mailsac.com", "inboxkitten.com", "33mail.com", "malinactor.com",
+  "tempinbox.com", "spamgourmet.com", "mytemp.email", "tempr.email",
+  "dropmail.me", "mailnull.com", "spamfree24.org", "jetable.org",
+  "trash-mail.com", "getairmail.com", "filzmail.com", "mailexpire.com",
+  "tempmailo.com", "tempmailaddress.com", "luxusmail.org", "tmpmail.net",
+  "tmpmail.org", "boun.cr", "mt2015.com", "tmail.link",
+]);
+
+/* ── Email validation helpers ─────────────────────────────── */
+function isDisposableEmail(email) {
+  const domain = email.split("@")[1]?.toLowerCase();
+  return !domain || DISPOSABLE_EMAIL_DOMAINS.has(domain);
+}
+
+/* ── US phone number validation ───────────────────────────── */
+function isValidUSPhone(phone) {
+  const digits = phone.replace(/\D/g, "");
+  // Accept 10 digits, or 11 starting with 1 (country code)
+  if (digits.length === 11 && digits[0] === "1") {
+    return isValidNANPNumber(digits.slice(1));
+  }
+  if (digits.length === 10) {
+    return isValidNANPNumber(digits);
+  }
+  return false;
+}
+
+function isValidNANPNumber(tenDigits) {
+  const areaCode = tenDigits.slice(0, 3);
+  const exchange = tenDigits.slice(3, 6);
+  // Area code and exchange can't start with 0 or 1
+  if (areaCode[0] === "0" || areaCode[0] === "1") return false;
+  if (exchange[0] === "0" || exchange[0] === "1") return false;
+  // Block known non-real prefixes (555, 900, 976)
+  if (areaCode === "555") return false;
+  if (exchange === "555" && tenDigits.slice(6, 10) >= "0100" && tenDigits.slice(6, 10) <= "0199") {
+    return false; // 555-01XX are reserved fictional numbers
+  }
+  return true;
+}
+
 /* ── Lead payload validation ──────────────────────────────── */
 export function validateLeadPayload(payload) {
   const errors = [];
@@ -159,11 +209,15 @@ export function validateLeadPayload(payload) {
   if (!name || typeof name !== "string" || name.trim().length < 2 || name.trim().length > 200)
     errors.push("Name must be 2–200 characters");
 
+  // Email: format check + disposable domain blocklist
   if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
     errors.push("Invalid email address");
+  else if (isDisposableEmail(email.trim()))
+    errors.push("Please use a permanent email address");
 
-  if (!phone || typeof phone !== "string" || phone.replace(/\D/g, "").length < 10)
-    errors.push("Phone must have at least 10 digits");
+  // Phone: valid US number (NANP format)
+  if (!phone || typeof phone !== "string" || !isValidUSPhone(phone))
+    errors.push("Please enter a valid US phone number");
 
   if (!consent_methods || typeof consent_methods !== "string" || consent_methods.trim().length === 0)
     errors.push("At least one consent method is required");

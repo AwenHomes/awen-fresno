@@ -1,3 +1,4 @@
+import { promises as dns } from "node:dns";
 import { validateLeadPayload, sanitize } from "./_shared.js";
 import { getLeadLimiter, applyRateLimit } from "./_ratelimit.js";
 
@@ -29,6 +30,17 @@ export default async function handler(req, res) {
     const errors = validateLeadPayload(payload);
     if (errors.length > 0) {
       return res.status(400).json({ error: "Validation failed", details: errors });
+    }
+
+    // MX record check — does the email domain actually accept mail?
+    const emailDomain = payload.email.trim().split("@")[1];
+    try {
+      const mx = await dns.resolveMx(emailDomain);
+      if (!mx || mx.length === 0) {
+        return res.status(400).json({ error: "Validation failed", details: ["This email domain does not accept mail"] });
+      }
+    } catch {
+      return res.status(400).json({ error: "Validation failed", details: ["This email domain does not appear to exist"] });
     }
 
     // Build clean lead record

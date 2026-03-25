@@ -1,11 +1,14 @@
 import { validateLeadPayload, sanitize } from "./_shared.js";
+import { getLeadLimiter, applyRateLimit } from "./_ratelimit.js";
+
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "https://report.awenenergy.com";
 
 export default async function handler(req, res) {
   try {
-    // CORS — allow all origins for now
+    // CORS — locked to allowed origin
     const origin = req.headers.origin || "";
-    if (origin) {
-      res.setHeader("Access-Control-Allow-Origin", origin);
+    if (origin === ALLOWED_ORIGIN) {
+      res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
     }
     if (req.method === "OPTIONS") {
       res.setHeader("Access-Control-Allow-Methods", "POST");
@@ -16,6 +19,10 @@ export default async function handler(req, res) {
       res.setHeader("Allow", "POST");
       return res.status(405).json({ error: "Method not allowed" });
     }
+
+    // Rate limiting (3 submissions per 10 min per IP)
+    const blocked = await applyRateLimit(req, res, getLeadLimiter());
+    if (blocked) return;
 
     // Validate payload
     const payload = req.body || {};

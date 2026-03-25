@@ -4,9 +4,11 @@ export default async function handler(req, res) {
   const checks = {};
 
   // 1. Is the Anthropic API key set?
-  checks.ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
-    ? `SET (starts with "${process.env.ANTHROPIC_API_KEY.slice(0, 7)}...")`
-    : "MISSING — this is required for report generation";
+  const apiKey = process.env.ANTHROPIC_API_KEY || process.env.VITE_ANTHROPIC_API_KEY;
+  const apiKeySource = process.env.ANTHROPIC_API_KEY ? "ANTHROPIC_API_KEY" : process.env.VITE_ANTHROPIC_API_KEY ? "VITE_ANTHROPIC_API_KEY" : null;
+  checks.ANTHROPIC_API_KEY = apiKey
+    ? `SET via ${apiKeySource} (starts with "${apiKey.slice(0, 7)}...")`
+    : "MISSING — add ANTHROPIC_API_KEY to Vercel environment variables";
 
   // 2. Can we reach the Anthropic API?
   try {
@@ -14,7 +16,7 @@ export default async function handler(req, res) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_API_KEY || "missing",
+        "x-api-key": apiKey || "missing",
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({

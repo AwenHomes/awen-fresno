@@ -27,10 +27,10 @@ export default async function handler(req, res) {
     // Build prompt server-side
     const prompt = buildPrompt(inputs);
 
-    // Check API key
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    // Check API key — accept either name (VITE_ prefix was used in older setup)
+    const apiKey = process.env.ANTHROPIC_API_KEY || process.env.VITE_ANTHROPIC_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: "ANTHROPIC_API_KEY not configured" });
+      return res.status(500).json({ error: "Anthropic API key not found. Please set ANTHROPIC_API_KEY in Vercel environment variables." });
     }
 
     // Call Anthropic API

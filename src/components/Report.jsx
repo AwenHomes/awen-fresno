@@ -267,6 +267,16 @@ function ShareButtons() {
       href: `https://wa.me/?text=${shareText}%20${shareUrl}`,
       color: "#25D366",
     },
+    {
+      label: "Share on Nextdoor",
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.5 14.5h-2.25v-4.75c0-1.1-.9-2-2-2s-2 .9-2 2v4.75H7.5V9.75h2.25v1.1c.6-.9 1.65-1.6 2.75-1.6 2.2 0 4 1.8 4 4v3.25z"/>
+        </svg>
+      ),
+      href: `https://nextdoor.com/share/?url=${shareUrl}&title=${shareText}`,
+      color: "#8DB600",
+    },
   ];
 
   return (

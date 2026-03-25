@@ -1,96 +1,30 @@
-// Vercel Serverless Function — Lead Submission with Validation
-// ─────────────────────────────────────────────────────────────
-// Validates lead data server-side before inserting into Supabase.
-// Rate-limited to prevent spam submissions.
-//
-// SETUP:
-//   1. SUPABASE_URL — Vercel env var (no VITE_ prefix, server-side only)
-//   2. SUPABASE_SERVICE_KEY — Vercel env var (service role key for server-side inserts)
-//   3. UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN — for rate limiting
-
 import { validateLeadPayload, sanitize } from "./_shared.js";
-
-/* ── Lazy-load rate limiter (avoids crash if packages unavailable) ── */
-let _ratelimit = undefined;
-async function getRatelimit() {
-  if (_ratelimit !== undefined) return _ratelimit;
-  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-    _ratelimit = null;
-    return null;
-  }
-  try {
-    const { Ratelimit } = await import("@upstash/ratelimit");
-    const { Redis } = await import("@upstash/redis");
-    _ratelimit = new Ratelimit({
-      redis: new Redis({
-        url: process.env.UPSTASH_REDIS_REST_URL,
-        token: process.env.UPSTASH_REDIS_REST_TOKEN,
-      }),
-      limiter: Ratelimit.slidingWindow(3, "10 m"),
-      prefix: "awen:lead",
-    });
-  } catch {
-    _ratelimit = null;
-  }
-  return _ratelimit;
-}
-
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGIN || "")
-  .split(",").map(s => s.trim()).filter(Boolean);
-
-function isOriginAllowed(origin) {
-  if (!ALLOWED_ORIGINS.length) return true;
-  if (!origin) return true;
-  return ALLOWED_ORIGINS.some(allowed => origin === allowed);
-}
 
 export default async function handler(req, res) {
   try {
-    // CORS
+    // CORS — allow all origins for now
     const origin = req.headers.origin || "";
-    if (!isOriginAllowed(origin)) {
-      return res.status(403).json({ error: "Forbidden" });
-    }
     if (origin) {
       res.setHeader("Access-Control-Allow-Origin", origin);
     }
-
     if (req.method === "OPTIONS") {
       res.setHeader("Access-Control-Allow-Methods", "POST");
       res.setHeader("Access-Control-Allow-Headers", "Content-Type");
       return res.status(204).end();
     }
-
     if (req.method !== "POST") {
       res.setHeader("Allow", "POST");
       return res.status(405).json({ error: "Method not allowed" });
     }
 
-    // ── Rate limiting ──────────────────────────────────────────
-    const ratelimit = await getRatelimit();
-    if (ratelimit) {
-      const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim()
-        || req.headers["x-real-ip"]
-        || "unknown";
-      const { success, remaining, reset } = await ratelimit.limit(ip);
-
-      res.setHeader("X-RateLimit-Remaining", String(remaining));
-      res.setHeader("X-RateLimit-Reset", String(reset));
-
-      if (!success) {
-        return res.status(429).json({ error: "Too many submissions. Please try again later." });
-      }
-    }
-
-    // ── Validate payload ───────────────────────────────────────
+    // Validate payload
     const payload = req.body || {};
     const errors = validateLeadPayload(payload);
-
     if (errors.length > 0) {
       return res.status(400).json({ error: "Validation failed", details: errors });
     }
 
-    // ── Sanitize and build clean lead record ───────────────────
+    // Build clean lead record
     const lead = {
       name:                sanitize(payload.name),
       email:               sanitize(payload.email).toLowerCase(),
@@ -104,7 +38,7 @@ export default async function handler(req, res) {
       solar_status:        sanitize(payload.solar_status),
       frustrations:        sanitize(payload.frustrations),
       consent_methods:     sanitize(payload.consent_methods),
-      consented_at:        new Date().toISOString(), // Server-generated timestamp
+      consented_at:        new Date().toISOString(),
       consent_text:        sanitize(payload.consent_text).slice(0, 1000),
       consent_url:         sanitize(payload.consent_url).slice(0, 500),
       user_agent:          sanitize(payload.user_agent).slice(0, 500),
@@ -112,10 +46,9 @@ export default async function handler(req, res) {
       ai_report_generated: Boolean(payload.ai_report_generated),
     };
 
-    // ── Insert into Supabase ───────────────────────────────────
+    // Insert into Supabase
     const sbUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
     const sbKey = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_KEY;
-
     if (!sbUrl || !sbKey) {
       return res.status(500).json({ error: "Server misconfiguration" });
     }

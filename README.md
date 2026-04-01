@@ -105,10 +105,11 @@ CREATE TABLE IF NOT EXISTS leads (
 
 ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
 
--- Allow browser (anon key) to insert rows only
-CREATE POLICY "Allow anon inserts" ON leads
+-- Block direct anonymous inserts — all inserts go through the server-side
+-- API (service role key), so the anon role should never write directly.
+CREATE POLICY "Deny anon inserts" ON leads
   FOR INSERT TO anon
-  WITH CHECK (true);
+  WITH CHECK (false);
 ```
 
 ### Existing table — run these migrations to add new columns:
@@ -126,6 +127,15 @@ ALTER TABLE leads ADD COLUMN IF NOT EXISTS ai_report_generated boolean DEFAULT f
 
 -- TCPA: which contact methods the homeowner consented to
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS consent_methods text;
+```
+
+### Security fix — restrict anonymous inserts:
+
+```sql
+DROP POLICY IF EXISTS "Allow anon inserts" ON leads;
+CREATE POLICY "Deny anon inserts" ON leads
+  FOR INSERT TO anon
+  WITH CHECK (false);
 ```
 
 ## Local Development
